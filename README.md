@@ -9,4 +9,19 @@ Your first goal will be to produce a system that stores the current company data
 
 You will then query the database to get up-to-date metrics for the business.
 
+# Step 1 : Set up New DB to store data.
+
+Initialise a new database locally to store the extracted data.
+
+Set up a new database within pgadmin4 and name it sales_data.
+
+This database will store all the company information once you extract it for the various data sources.
+
+# Step 2: Initialise 3 project classes 
+  # Data Extractor Class - To extract data from CSV, API, S3
+    Created 3 methods for extractng data
+  
+#
+
+
 
