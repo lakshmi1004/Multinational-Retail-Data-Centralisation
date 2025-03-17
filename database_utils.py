@@ -40,7 +40,7 @@ class DatabaseConnector:
 
         try:
             df.to_sql(table_name, engine, if_exists='replace', index=False)
-            print(f"✅ Successfully uploaded data to table '{table_name}' in 'sales_data' database.")
+            print(f"Successfully uploaded data to table '{table_name}' in 'sales_data' database.")
         except Exception as e:
-            print(f"❌ Error uploading data: {e}")
+            print(f"Error uploading data: {e}")
 
