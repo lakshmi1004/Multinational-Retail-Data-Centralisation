@@ -36,10 +36,18 @@ class DatabaseConnector:
 
     def upload_to_db(self, df, table_name):
     # Connect to the LOCAL PostgreSQL database (not the read-only RDS)
-        engine = create_engine("postgresql://postgres:your_local_password@localhost:5432/sales_data")
+        
+        creds = self.read_db_creds()
+
+        engine = create_engine(
+                f"postgresql://{creds['LOCAL_DB_USER']}:{creds['LOCAL_DB_PASSWORD']}@"
+                f"{creds['LOCAL_DB_HOST']}:{creds['LOCAL_DB_PORT']}/{creds['LOCAL_DB_DATABASE']}"
+        )
 
         try:
-            df.to_sql(table_name, engine, if_exists='replace', index=False)
+            with engine.connect() as conn:
+
+                df.to_sql(table_name, engine, if_exists='replace', index=False)
             print(f"Successfully uploaded data to table '{table_name}' in 'sales_data' database.")
         except Exception as e:
             print(f"Error uploading data: {e}")
