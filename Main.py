@@ -18,7 +18,24 @@ user_data = data_extractor.read_rds_table(db_connector, 'legacy_users')
 
 # Step 3: Clean user data
 cleaned_data = data_cleaning.clean_user_data(user_data)
+
+# Step 4: Extract data from the card data table
+card_data = data_extractor.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+
+# Step 5: Clean card data
+cleaned_card_data = data_cleaning.cleaned_card_data(card_data)
+
+# Step 6: Upload cleaned data to the local 'sales_data' database
 engine_local = db_connector.init_db_engine(db_type='LOCAL')
 
-# Step 4: Upload cleaned data to the local 'sales_data' database
-db_connector.upload_to_db(cleaned_data, 'dim_users')
+try:
+    db_connector.upload_to_db(cleaned_data, 'dim_users')
+    print(" Successfully uploaded cleaned user data to 'dim_users'.")
+except Exception as e:
+    print(f"Error uploading user data: {e}")
+
+try:
+    db_connector.upload_to_db(cleaned_card_data, 'dim_card_details')
+    print("Successfully uploaded cleaned card data to 'dim_card_details'.")
+except Exception as e:
+    print(f"Error uploading card data: {e}")
