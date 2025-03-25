@@ -2,6 +2,8 @@ import pandas as pd
 import requests
 import boto3
 import io
+import tabula
+from database_utils import DatabaseConnector
 
 class DataExtractor:
     
@@ -59,3 +61,22 @@ class DataExtractor:
             df = pd.read_json(link_parts[-1])
 
         return df
+    def retrieve_pdf_data(self, card_data):
+        """
+        Extracts data from a PDF document and returns it as a pandas DataFrame.
+        """
+        card_data = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
+        try:
+            # Extract data from all pages
+            df_list = tabula.read_pdf(card_data, pages='all', multiple_tables=True)
+            
+            # Combine all extracted tables into one DataFrame
+            combined_df = pd.concat(df_list, ignore_index=True)
+            
+            
+            print("PDF data successfully extracted.")
+            return combined_df
+        
+        except Exception as e:
+            print(f" Error extracting PDF data: {e}")
+            return pd.DataFrame()
