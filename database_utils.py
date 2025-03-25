@@ -33,10 +33,8 @@ class DatabaseConnector:
         return tables
 
 
-
     def upload_to_db(self, df, table_name):
     # Connect to the LOCAL PostgreSQL database (not the read-only RDS)
-        
         creds = self.read_db_creds()
 
         engine = create_engine(
@@ -51,4 +49,6 @@ class DatabaseConnector:
             print(f"Successfully uploaded data to table '{table_name}' in 'sales_data' database.")
         except Exception as e:
             print(f"Error uploading data: {e}")
+
+        
 
