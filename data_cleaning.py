@@ -1,4 +1,8 @@
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DataCleaning:
     
@@ -118,3 +122,12 @@ class DataCleaning:
                 print(f"Warning: Expected 15,284 rows but got {final_row_count}")
          
             return df
+    
+    def clean_store_data(self, df):
+        """
+        This method will clean the store data and return a cleaned DataFrame.
+        """
+        cleaned_df = df.copy()    
+        
+        return cleaned_df
+
