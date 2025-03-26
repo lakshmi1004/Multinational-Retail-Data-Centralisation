@@ -58,15 +58,23 @@ except Exception as e:
     logger.error("Error retrieving number of stores: %s", e)
     raise
 
-# Step 7: Retrieve store data
 try:
-    store_endpoint = "https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{}"
+    store_endpoint = "https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_number}"
+    number_of_stores = data_extractor.list_number_of_stores(number_stores_endpoint)
+
+    if number_of_stores is None:
+        logger.error("Error: Could not retrieve number of stores from API.")
+        raise ValueError("API returned None for number_of_stores.")
+
+    # Retrieve store data
     stores_df = data_extractor.retrieve_stores_data(store_endpoint, number_of_stores)
 
+    # Debugging output
     if stores_df.empty:
         logger.warning("No store data retrieved. Check API response.")
     else:
         logger.info("Successfully retrieved store data.")
+        logger.debug(f"First rows of store data:\n{stores_df.head()}")  # Debugging check
 
     # Log the columns of the DataFrame to inspect the structure
     logger.info(f"Columns in stores_df: {stores_df.columns}")
@@ -75,8 +83,9 @@ try:
     cleaned_stores_data = data_cleaning.clean_store_data(stores_df)
 
 except Exception as e:
-    logger.error("Error cleaning store data: %s", e)
+    logger.error("Error retrieving or cleaning store data: %s", e, exc_info=True)
     raise
+
 
 
 # Step 9: Upload cleaned data to the local 'sales_data' database
