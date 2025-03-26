@@ -88,21 +88,42 @@ class DataExtractor:
             print(f" Error extracting PDF data: {e}")
             return pd.DataFrame()
         
-    def list_number_of_stores(self, number_stores_endpoint):
-        """
-        This method will return the number of stores to extract from the API.
-        """
+    def list_number_of_stores(self, number_stores_endpoint,):
+        """Returns the number of stores to extract from the API."""
         response = requests.get(number_stores_endpoint, headers=self.headers)
         if response.status_code == 200:
             data = response.json()
             logger.info("Number of stores retrieved: %s", data)
-            # Ensure the correct key is being accessed
-            return data.get('number_of_stores', None)
+            
+            if 'number_stores' in data:
+                return data['number_stores']
+            else:
+                logger.error("The key 'number_stores' was not found in the response data.")
+                return None
         else:
             logger.error("Error fetching store number. Response: %s", response.text)
             return None
-
     def retrieve_stores_data(self, store_endpoint, number_of_stores):
+        store_data = []
+        failed_stores = []
+
+        for store_number in range(1, number_of_stores + 1):
+            try:
+                store_url = store_endpoint.format(store_number=store_number)  # Correct formatting
+                response = requests.get(store_url, headers=self.headers)
+                response.raise_for_status()
+                store_data.append(response.json())
+            except requests.HTTPError as e:
+                logger.error(f"HTTP Error retrieving store {store_number}: {e}")
+                failed_stores.append(store_number)
+
+            except requests.RequestException as e:
+                logger.error(f"Request Error retrieving store {store_number}: {e}")
+                failed_stores.append(store_number)
+        return pd.DataFrame(store_data)
+
+
+    '''def retrieve_stores_data(self, store_endpoint, number_of_stores):
         """
         This method will extract all stores from the API and save them in a pandas DataFrame.
         """
@@ -124,4 +145,6 @@ class DataExtractor:
             except requests.RequestException as e:
                 print(f"An error occurred while retrieving store {store_number}: {e}")
                 # I convert the list of store data into a DataFrame for further processing
-                return pd.DataFrame(store_data)
+                return pd.DataFrame(store_data)'
+                '''
+    
