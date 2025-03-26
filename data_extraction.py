@@ -1,12 +1,18 @@
 import pandas as pd
 import requests
 import boto3
-import io
+import logging
 import tabula
 from database_utils import DatabaseConnector
 
+# Initialize logging
+logger = logging.getLogger(__name__)
+
 class DataExtractor:
-    
+
+    def __init__(self, api_key):
+        self.headers = {'x-api-key': api_key}
+            
     def read_rds_table(self, db_connector, table_name):
         engine = db_connector.init_db_engine()
         with engine.connect() as connection:
@@ -61,6 +67,7 @@ class DataExtractor:
             df = pd.read_json(link_parts[-1])
 
         return df
+    
     def retrieve_pdf_data(self, card_data):
         """
         Extracts data from a PDF document and returns it as a pandas DataFrame.
@@ -80,3 +87,41 @@ class DataExtractor:
         except Exception as e:
             print(f" Error extracting PDF data: {e}")
             return pd.DataFrame()
+        
+    def list_number_of_stores(self, number_stores_endpoint):
+        """
+        This method will return the number of stores to extract from the API.
+        """
+        response = requests.get(number_stores_endpoint, headers=self.headers)
+        if response.status_code == 200:
+            data = response.json()
+            logger.info("Number of stores retrieved: %s", data)
+            # Ensure the correct key is being accessed
+            return data.get('number_of_stores', None)
+        else:
+            logger.error("Error fetching store number. Response: %s", response.text)
+            return None
+
+    def retrieve_stores_data(self, store_endpoint, number_of_stores):
+        """
+        This method will extract all stores from the API and save them in a pandas DataFrame.
+        """
+        if number_of_stores is None:
+            logger.error("Number of stores is None, cannot retrieve data.")
+            return pd.DataFrame()  # Return an empty DataFrame if no stores found
+        
+        store_data = []
+        for store_number in range(1, number_of_stores + 1):
+            try:
+                store_url = store_endpoint/(store_number)
+                response = requests.get(store_url, headers=self.headers)
+                response.raise_for_status()
+                store_data.append(response.json())
+            except requests.HTTPError as e:
+                # I log any errors that aren't server (500) errors 
+                if e.response.status_code != 500:
+                    print(f"An error occurred while retrieving store {store_number}: {e}")
+            except requests.RequestException as e:
+                print(f"An error occurred while retrieving store {store_number}: {e}")
+                # I convert the list of store data into a DataFrame for further processing
+                return pd.DataFrame(store_data)
