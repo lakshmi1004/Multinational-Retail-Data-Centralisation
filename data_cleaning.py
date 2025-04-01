@@ -1,5 +1,7 @@
 import pandas as pd
 import logging
+import numpy as np
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,7 @@ class DataCleaning:
             # Check which rows still have unparsed dates (optional debug step)
             invalid_dates = df[df["date_payment_confirmed"].isna()]
             print(f"Unparsed dates: {len(invalid_dates)}")
-            print(f"Unparsed dates: {invalid_dates}")
+           # print(f"Unparsed dates: {invalid_dates}")
 
             # Drop rows where date conversion failed
             df.dropna(subset=["date_payment_confirmed"], inplace=True)
@@ -122,12 +124,64 @@ class DataCleaning:
                 print(f"Warning: Expected 15,284 rows but got {final_row_count}")
          
             return df
-    
+          
     def clean_store_data(self, df):
         """
-        This method will clean the store data and return a cleaned DataFrame.
-        """
-        cleaned_df = df.copy()    
-        
-        return cleaned_df
+        Cleans the store details DataFrame by handling NULL values, converting data types,
+        and formatting the 'staff_numbers' column correctly.
 
+        Args:
+            df (pd.DataFrame): The store details DataFrame.
+
+        Returns:
+            pd.DataFrame: The cleaned DataFrame.
+        """
+        df = df.copy()
+        print(f"Initial row count: {df.shape[0]}")
+
+        if 'lat' in df.columns:
+            df.drop(columns=['lat'], inplace=True) # Remove the 'lat' column, as it seems to be an empty duplicate of 'latitude'
+            print(f"dropped lat column")
+
+         # ✅ Validate 'store_code' format (First 2-3 letters, hyphen, 8 alphanumeric characters)
+        store_code_pattern = re.compile(r'^[A-Za-z]{2,3}-[A-Za-z0-9]{8}$')
+        df = df[df['store_code'].astype(str).str.match(store_code_pattern, na=False)]
+ 
+        #Convert 'opening_date' to datetime format (handle different formats)
+        def date(date_str):
+                """Try multiple date formats for date_payment_confirmed."""
+                date_formats = ["%d-%m-%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%Y %m %d","%Y/%m/%d",
+                  "%Y %d %m", "%m %d %Y", "%d %m %Y","%m %Y %d" , "%m %Y %d", "%d %Y %m", "%Y.%m.%d", "%Y.%d.%m",
+                  "%m.%d.%Y", "%d.%m.%Y", "%Y.%m.%d", "%Y.%d.%m", "%m.%d.%Y",
+                  "%Y.%m.%d", "%Y.%d.%m", "%m.%d.%Y", "%d.%m.%Y", "%Y.%m.%d", "%Y.%d.%m", "%m.%d.%Y",
+                    "%d.%m.%Y", "%Y%m%d", "%Y%d%m", "%m%d%Y", "%d%m%Y","%Y %m", "%Y %d", "%m %Y", "%d %Y",
+                    "%Y/%m", "%Y %m", "%m %Y", "%d %Y", "%Y.%m", "%Y.%d", "%m.%Y", "%d.%Y", "%Y%m", "%Y %m", "%m %Y",
+                    "%d %Y", "%B %Y %d", "%B %d %Y", "%Y %B %d", "%Y %d %B", "%d %B %Y", "%B %Y %d", "%B %d %Y",
+                    "%Y %B", "%Y %d", "%B %Y", "%d %Y", "%B %Y", "%Y %B", "%B %Y", "%d %B", "%B %d", "%Y %B", "%B %Y"]             
+                
+                for fmt in date_formats:
+                    try:
+                        return pd.to_datetime(date_str, format=fmt)
+                    except (ValueError, TypeError):
+                        continue
+                return pd.NaT  # Return NaT if no formats match
+        
+        df['opening_date'] =df['opening_date'].apply(date)
+
+       #Remove non-numeric characters from 'staff_number' column
+        if 'staff_numbers' in df.columns:
+            # Strip non-numeric characters (symbols, letters, spaces) and convert to integers
+            df['staff_numbers'] = df['staff_numbers'].astype(str).str.extract(r'(\d+)')
+            df['staff_numbers'] = pd.to_numeric(df['staff_numbers'], errors='coerce')
+   
+        print(f"After removing non-numeric characters: {df.shape[0]}")
+          
+        initial_row_count = len(df)
+        df.dropna(how='all',inplace=True)  # Remove all rows with any NULL values
+        final_row_count = len(df)
+        dropped_rows = initial_row_count - final_row_count
+        print(f"Initial row count: {initial_row_count}")
+        print(f"Dropped {dropped_rows} rows due to NULL values.")
+        print(f"Final row count: {final_row_count}")
+
+        return df
