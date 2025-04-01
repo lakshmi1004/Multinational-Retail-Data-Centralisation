@@ -4,6 +4,7 @@ import boto3
 import logging
 import tabula
 from database_utils import DatabaseConnector
+import numpy as np
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -105,46 +106,22 @@ class DataExtractor:
             return None
     def retrieve_stores_data(self, store_endpoint, number_of_stores):
         store_data = []
-        failed_stores = []
 
-        for store_number in range(1, number_of_stores + 1):
+        for store_number in range(0, number_of_stores + 1):
             try:
+                if store_number == 451:
+                    logger.warning(f"Skipping store {store_number} due to persistent server error.")
+                    continue    
                 store_url = store_endpoint.format(store_number=store_number)  # Correct formatting
                 response = requests.get(store_url, headers=self.headers)
                 response.raise_for_status()
                 store_data.append(response.json())
             except requests.HTTPError as e:
-                logger.error(f"HTTP Error retrieving store {store_number}: {e}")
-                failed_stores.append(store_number)
-
+                if e.response.status_code == 500:
+                    logger.error(f"Skipping store {store_number} due to server error: {e}")
+                else:
+                    logger.error(f"HTTP error retrieving store {store_number}: {e}")
             except requests.RequestException as e:
-                logger.error(f"Request Error retrieving store {store_number}: {e}")
-                failed_stores.append(store_number)
+                logger.error(f"Request failed for store {store_number}: {e}")
         return pd.DataFrame(store_data)
 
-
-    '''def retrieve_stores_data(self, store_endpoint, number_of_stores):
-        """
-        This method will extract all stores from the API and save them in a pandas DataFrame.
-        """
-        if number_of_stores is None:
-            logger.error("Number of stores is None, cannot retrieve data.")
-            return pd.DataFrame()  # Return an empty DataFrame if no stores found
-        
-        store_data = []
-        for store_number in range(1, number_of_stores + 1):
-            try:
-                store_url = store_endpoint/(store_number)
-                response = requests.get(store_url, headers=self.headers)
-                response.raise_for_status()
-                store_data.append(response.json())
-            except requests.HTTPError as e:
-                # I log any errors that aren't server (500) errors 
-                if e.response.status_code != 500:
-                    print(f"An error occurred while retrieving store {store_number}: {e}")
-            except requests.RequestException as e:
-                print(f"An error occurred while retrieving store {store_number}: {e}")
-                # I convert the list of store data into a DataFrame for further processing
-                return pd.DataFrame(store_data)'
-                '''
-    
