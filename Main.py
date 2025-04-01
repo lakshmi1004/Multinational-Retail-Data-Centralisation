@@ -4,6 +4,7 @@ from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
 from data_cleaning import DataCleaning
 
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -86,28 +87,27 @@ except Exception as e:
     logger.error("Error retrieving or cleaning store data: %s", e, exc_info=True)
     raise
 
-
-
 # Step 9: Upload cleaned data to the local 'sales_data' database
 engine_local = db_connector.init_db_engine(db_type='LOCAL')
 
 # Step 9.1: Function to upload data to DB
 def upload_data_to_db(data, table_name):
+    """
+    Uploads cleaned data to the specified PostgreSQL table.
+
+    Args:
+        data (pd.DataFrame): The cleaned DataFrame to upload.
+        table_name (str): The name of the target database table.
+
+    Returns:
+        None
+    """
     try:
-        db_connector.upload_to_db(cleaned_user_data, 'dim_users')  # Only pass the cleaned data and the table name
-        print("Successfully uploaded cleaned user data to 'dim_users'.")
+        db_connector.upload_to_db(data, table_name)  # Use the passed arguments
+        print(f" Successfully uploaded cleaned data to '{table_name}'.")
     except Exception as e:
-        print(f"Error uploading user data: {e}")
+        print(f" Error uploading data to '{table_name}': {e}")
 
-try:
-    db_connector.upload_to_db(cleaned_card_data, 'dim_card_details')  # Only pass the cleaned data and the table name
-    print("Successfully uploaded cleaned card data to 'dim_card_details'.")
-except Exception as e:
-    print(f"Error uploading card data: {e}")
-
-try:
-    db_connector.upload_to_db(cleaned_stores_data, 'dim_store_details')  # Only pass the cleaned data and the table name
-    print("Successfully uploaded cleaned store data to 'dim_store_details'.")
-except Exception as e:
-    print(f"Error uploading store data: {e}")
-
+upload_data_to_db(cleaned_stores_data, 'dim_store_details')
+upload_data_to_db(cleaned_card_data, 'dim_card_details')
+upload_data_to_db(cleaned_user_data, 'dim_users')
