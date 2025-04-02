@@ -5,7 +5,7 @@ RDS_DATABASE: postgres
 RDS_PORT: 5432
 
 LOCAL_DB_HOST: localhost
-LOCAL_DB_USER: postgres
-LOCAL_DB_PASSWORD: Aicore@11
+LOCAL_DB_USER: **postgres**
+LOCAL_DB_PASSWORD: ***Aic**ore@11**
 LOCAL_DB_DATABASE: sales_data
 LOCAL_DB_PORT: 5432
